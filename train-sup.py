@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 import tf2lib as tl
 import DLlib as dl
-import DMlib as dm
 import pylib as py
 import wflib as wf
 
@@ -18,9 +17,6 @@ from itertools import cycle
 
 py.arg('--dataset', default='WF-sup')
 py.arg('--data_size', type=int, default=192, choices=[192,384])
-py.arg('--DL_gen', type=bool, default=False)
-py.arg('--DL_partial_real', type=bool, default=False)
-py.arg('--DL_filename', default='LDM_ds')
 py.arg('--sigma_noise', type=float, default=0.0)
 py.arg('--shuffle', type=bool, default=True)
 py.arg('--n_echoes', type=int, default=6)
@@ -72,93 +68,30 @@ valX, valY = data.load_hdf5(dataset_dir, dataset_hdf5_1, ech_idx,
 A_B_dataset_val = tf.data.Dataset.from_tensor_slices((valX,valY))
 A_B_dataset_val.batch(1)
 
-if not(args.DL_gen):
-    if args.DL_partial_real:
-        if args.TE1 == 0.0014 and args.dTE == 0.0022:
-            dataset_hdf5_1 = 'multiTE_' + str(args.data_size) + '_complex_2D.hdf5'
-            ini_idxs = [0,84,204,300,396,484,580,680,776,848]#,932,1028, 1100,1142,1190,1232,1286,1334,1388,1460]
-            delta_idxs = [21,24,24,24,22,24,25,24,18]#,21,24,18, 21,24,21,18,16,18,24,21]
-            k_idxs = [(0,1),(2,3)]
-            for k in k_idxs:
-                custom_list = [a for a in range(ini_idxs[0]+k[0]*delta_idxs[0],ini_idxs[0]+k[1]*delta_idxs[0])]
-            # Rest of the patients
-            for i in range(1,len(ini_idxs)):
-                if (i<=11) and args.TE1 == 0.0013 and args.dTE == 0.0022:
-                    k_idxs = [(0,1),(2,3)]
-                elif (i<=11) and args.TE1 == 0.0014 and args.dTE == 0.0022:
-                    k_idxs = [(0,1),(3,4)]
-                elif (i==1) and args.TE1 == 0.0013 and args.dTE == 0.0023:
-                    k_idxs = [(0,1),(4,5)]
-                elif (i==15 or i==16) and args.TE1 == 0.0013 and args.dTE == 0.0023:
-                    k_idxs = [(0,1),(2,3)]
-                elif (i>=17) and args.TE1 == 0.0013 and args.dTE == 0.0024:
-                    k_idxs = [(0,1),(2,3)]
-                else:
-                    k_idxs = [(0,2)]
-                for k in k_idxs:
-                    custom_list += [a for a in range(ini_idxs[i]+k[0]*delta_idxs[i],ini_idxs[i]+k[1]*delta_idxs[i])]
-                trainX, trainY, TEs =data.load_hdf5(dataset_dir, dataset_hdf5, ech_idx, custom_list=custom_list,
-                                                    acqs_data=True,te_data=True,remove_zeros=False,
-                                                    MEBCRN=(args.G_model=='MEBCRN'))
-        else:
-            dataset_hdf5_2 = 'INTArest_GC_' + str(args.data_size) + '_complex_2D.hdf5'
-            trainX, trainY = data.load_hdf5(dataset_dir,dataset_hdf5_2, ech_idx, end=200,
-                                            acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
-    else:
-        dataset_hdf5_2 = 'INTArest_GC_' + str(args.data_size) + '_complex_2D.hdf5'
-        acqs_2, out_maps_2 = data.load_hdf5(dataset_dir,dataset_hdf5_2, ech_idx,
-                                            acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
+dataset_hdf5_2 = 'INTArest_GC_' + str(args.data_size) + '_complex_2D.hdf5'
+acqs_2, out_maps_2 = data.load_hdf5(dataset_dir,dataset_hdf5_2, ech_idx,
+                                    acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
 
-        dataset_hdf5_3 = 'Volunteers_GC_' + str(args.data_size) + '_complex_2D.hdf5'
-        acqs_3, out_maps_3 = data.load_hdf5(dataset_dir, dataset_hdf5_3, ech_idx,
-                                            acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
+dataset_hdf5_3 = 'Volunteers_GC_' + str(args.data_size) + '_complex_2D.hdf5'
+acqs_3, out_maps_3 = data.load_hdf5(dataset_dir, dataset_hdf5_3, ech_idx,
+                                    acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
 
-        dataset_hdf5_4 = 'Attilio_GC_' + str(args.data_size) + '_complex_2D.hdf5'
-        acqs_4, out_maps_4 = data.load_hdf5(dataset_dir, dataset_hdf5_4, ech_idx,
-                                            acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
+dataset_hdf5_4 = 'Attilio_GC_' + str(args.data_size) + '_complex_2D.hdf5'
+acqs_4, out_maps_4 = data.load_hdf5(dataset_dir, dataset_hdf5_4, ech_idx,
+                                    acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
 
-        trainX  = np.concatenate((acqs_2,acqs_3,acqs_4),axis=0)
-        trainY  = np.concatenate((out_maps_2,out_maps_3,out_maps_4),axis=0)
+trainX  = np.concatenate((acqs_2,acqs_3,acqs_4),axis=0)
+trainY  = np.concatenate((out_maps_2,out_maps_3,out_maps_4),axis=0)
 
-    if args.G_model == 'MEBCRN':
-        len_dataset,_,_,_,_ = np.shape(trainY)
-        _,n_out,hgt,wdt,n_ch = np.shape(valY)
-    else:
-        len_dataset,_,_,_ = np.shape(trainY)
-        _,hgt,wdt,n_out = np.shape(valY)
-        n_ch = 2
-
-    A_B_dataset = tf.data.Dataset.from_tensor_slices((trainX,trainY))
-
+if args.G_model == 'MEBCRN':
+    len_dataset,_,_,_,_ = np.shape(trainY)
+    _,n_out,hgt,wdt,n_ch = np.shape(valY)
 else:
-    recordPath = py.join('tfrecord', args.DL_filename)
-    tfr_dataset = tf.data.TFRecordDataset([recordPath])
-    # Create a description of the features.
-    feature_description = {
-        'acqs': tf.io.FixedLenFeature([], tf.string),
-        'out_maps': tf.io.FixedLenFeature([], tf.string),
-        }
+    len_dataset,_,_,_ = np.shape(trainY)
+    _,hgt,wdt,n_out = np.shape(valY)
+    n_ch = 2
 
-    def _parse_function(example_proto):
-        # Parse the input `tf.train.Example` proto using the dictionary above.
-        parsed_ds = tf.io.parse_example(example_proto, feature_description)
-        return tf.io.parse_tensor(parsed_ds['acqs'], out_type=tf.float32), tf.io.parse_tensor(parsed_ds['out_maps'], out_type=tf.float32)
-
-    A_B_dataset = tfr_dataset.map(_parse_function)
-
-    if args.DL_partial_real:
-        dataset_hdf5_2 = 'INTArest_GC_' + str(args.data_size) + '_complex_2D.hdf5'
-        trainX, trainY = data.load_hdf5(dataset_dir,dataset_hdf5_2, ech_idx, end=200,
-                                            acqs_data=True, te_data=False, MEBCRN=(args.G_model=='MEBCRN'))
-        A_B_dataset_aux = tf.data.Dataset.from_tensor_slices((trainX,trainY))
-        A_B_dataset = A_B_dataset.concatenate(A_B_dataset_aux)
-
-    for A, B in A_B_dataset.take(1):
-        hgt,wdt,_ = B.shape
-    len_dataset = int(args.DL_filename.split('_')[-1])
-    if args.DL_partial_real:
-        len_dataset += trainX.shape[0]
-
+A_B_dataset = tf.data.Dataset.from_tensor_slices((trainX,trainY))
 A_B_dataset = A_B_dataset.batch(args.batch_size)
 if args.shuffle:
     A_B_dataset = A_B_dataset.shuffle(len_dataset)
@@ -248,8 +181,7 @@ def train_G(A, B, te=None):
         if args.out_vars == 'WF':
             # Compute model's output
             A2B_WF_abs = G_A2B(A, training=True)
-            if not(args.DL_gen):
-                A2B_WF_abs = tf.where(B[:,:,:,:2]!=0.0,A2B_WF_abs,0.0)
+            A2B_WF_abs = tf.where(B[:,:,:,:2]!=0.0,A2B_WF_abs,0.0)
 
             # Compute zero-valued param maps
             A2B_PM = tf.zeros_like(A2B_WF_abs)
@@ -264,8 +196,7 @@ def train_G(A, B, te=None):
         elif args.out_vars == 'WFc':
             # Compute model's output
             A2B_WF = G_A2B(A, training=True)
-            if not(args.DL_gen):
-                A2B_WF = tf.where(B[:,:,:,:4]!=0.0,A2B_WF,0.0)
+            A2B_WF = tf.where(B[:,:,:,:4]!=0.0,A2B_WF,0.0)
 
             # Magnitude of water/fat images
             A2B_WF_real = A2B_WF[:,:,:,0::2]
@@ -285,8 +216,7 @@ def train_G(A, B, te=None):
         elif args.out_vars == 'PM':
             # Compute model's output
             A2B_PM = G_A2B(A, training=True)
-            if not(args.DL_gen):
-                A2B_PM = tf.where(B[:,:,:,:2]!=0.0,A2B_PM,0.0)
+            A2B_PM = tf.where(B[:,:,:,:2]!=0.0,A2B_PM,0.0)
 
             # Split A2B param maps
             A2B_R2 = A2B_PM[:,:,:,:1]
@@ -313,8 +243,7 @@ def train_G(A, B, te=None):
             # Compute model's output
             B_abs = tf.concat([B_WF_abs,B_PM],axis=-1)
             A2B_abs = G_A2B(A, training=True)
-            if not(args.DL_gen):
-                A2B_abs = tf.where(B[:,:,:,:4]!=0.0,A2B_abs,0.0)
+            A2B_abs = tf.where(B[:,:,:,:4]!=0.0,A2B_abs,0.0)
 
             # Split A2B outputs
             A2B_WF_abs = A2B_abs[:,:,:,:2]
